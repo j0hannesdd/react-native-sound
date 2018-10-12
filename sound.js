@@ -108,7 +108,7 @@ Sound.prototype.play = function(callback) {
   return this;
 };
 
-Sound.prototype.pause = function(onPause) {
+Sound.prototype.pause = function(callback) {
   if (this._loaded) {
     RNSound.pause(this._key, () => {
       this._playing = false;
@@ -120,7 +120,7 @@ Sound.prototype.pause = function(onPause) {
   return this;
 };
 
-Sound.prototype.stop = function(onStop) {
+Sound.prototype.stop = function(callback) {
   if (this._loaded) {
     RNSound.stop(this._key, () => {
       this._playing = false;

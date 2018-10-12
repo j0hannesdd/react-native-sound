@@ -21,11 +21,21 @@ function djb2Code(str) {
   return hash;
 }
 
-function Sound(filename, basePath, onError, options) {
+/**
+ * Instantiates and loads a new sound
+ * @param {string} filename or path or URI of the sound file
+ * @param {string=} [basePath] optional base path. See constants Sound.MAIN_BUNDLE, Sound.DOCUMENT, Sound.LIBRARY and Sound.CACHES
+ * @param {(error, props)} [callback] optional callback function (error, props)
+ * @param {*} options 
+ */
+function Sound(filename, basePath, callback, options) {
+  if (typeof basePath === 'function') {
+    callback = basePath;
+    basePath = null;
+  }
   var asset = resolveAssetSource(filename);
   if (asset) {
     this._filename = asset.uri;
-    onError = basePath;
   } else {
     this._filename = basePath ? basePath + '/' + filename : filename;
 
@@ -68,6 +78,9 @@ function Sound(filename, basePath, onError, options) {
   this._numberOfLoops = 0;
   this._speed = 1;
   RNSound.prepare(this._filename, this._key, options || {}, (error, props) => {
+    if (error) {
+      return callback && callback(error, props);
+    }
     if (props) {
       if (typeof props.duration === 'number') {
         this._duration = props.duration;
@@ -76,11 +89,9 @@ function Sound(filename, basePath, onError, options) {
         this._numberOfChannels = props.numberOfChannels;
       }
     }
-    if (error === null) {
-      this._loaded = true;
-      this.registerOnPlay();
-    }
-    onError && onError(error, props);
+    this._loaded = true;
+    this.registerOnPlay();
+    callback && callback(null, props);
   });
 }
 
@@ -88,31 +99,35 @@ Sound.prototype.isLoaded = function() {
   return this._loaded;
 };
 
-Sound.prototype.play = function(onEnd) {
+Sound.prototype.play = function(callback) {
   if (this._loaded) {
-    RNSound.play(this._key, (successfully) => onEnd && onEnd(successfully));
+    RNSound.play(this._key, (successfully) => callback && callback(successfully));
   } else {
-    onEnd && onEnd(false);
+    callback && callback(false);
   }
   return this;
 };
 
-Sound.prototype.pause = function(callback) {
+Sound.prototype.pause = function(onPause) {
   if (this._loaded) {
     RNSound.pause(this._key, () => {
       this._playing = false;
-      callback && callback();
+      callback && callback(true);
     });
+  } else {
+    callback && callback(false);
   }
   return this;
 };
 
-Sound.prototype.stop = function(callback) {
+Sound.prototype.stop = function(onStop) {
   if (this._loaded) {
     RNSound.stop(this._key, () => {
       this._playing = false;
-      callback && callback();
+      callback && callback(true);
     });
+  } else {
+    callback && callback(false);
   }
   return this;
 };
